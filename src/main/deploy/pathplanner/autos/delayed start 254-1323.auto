@@ -1,0 +1,124 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 0.25
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "delayed start 1-254"
+                }
+              },
+              {
+                "type": "sequential",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "IntakeDown"
+                      }
+                    },
+                    {
+                      "type": "wait",
+                      "data": {
+                        "waitTime": 0.3
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "RunIntake"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 2.0
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "delayed start 2-254"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ScoreFull"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "TrackAndAim"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "SlowPush"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "RunHopper"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopTracking"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "IntakeDown"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 0.75
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "delayed start 3-254"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

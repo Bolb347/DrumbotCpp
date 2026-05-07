@@ -1,0 +1,74 @@
+> Task :compileFrcUserProgramLinuxathenaDebugExecutableFrcUserProgramCpp UP-TO-DATE
+> Task :linkFrcUserProgramLinuxathenaDebugExecutable UP-TO-DATE
+> Task :frcUserProgramLinuxathenaDebugExecutable UP-TO-DATE
+> Task :compileFrcUserProgramLinuxathenaReleaseExecutableFrcUserProgramCpp UP-TO-DATE
+> Task :linkFrcUserProgramLinuxathenaReleaseExecutable UP-TO-DATE
+> Task :frcUserProgramLinuxathenaReleaseExecutable UP-TO-DATE
+> Task :compileFrcUserProgramOsxuniversalDebugExecutableFrcUserProgramCpp UP-TO-DATE
+> Task :linkFrcUserProgramOsxuniversalDebugExecutable UP-TO-DATE
+> Task :frcUserProgramOsxuniversalDebugExecutable UP-TO-DATE
+> Task :compileFrcUserProgramOsxuniversalReleaseExecutableFrcUserProgramCpp UP-TO-DATE
+> Task :linkFrcUserProgramOsxuniversalReleaseExecutable UP-TO-DATE
+> Task :frcUserProgramOsxuniversalReleaseExecutable UP-TO-DATE
+> Task :assemble UP-TO-DATE
+> Task :checkFrcUserProgramLinuxathenaDebugExecutable UP-TO-DATE
+> Task :checkFrcUserProgramLinuxathenaReleaseExecutable UP-TO-DATE
+> Task :compileFrcUserProgramTestOsxuniversalDebugGoogleTestExeFrcUserProgramCpp UP-TO-DATE
+> Task :linkFrcUserProgramTestOsxuniversalDebugGoogleTestExe UP-TO-DATE
+> Task :frcUserProgramTestOsxuniversalDebugGoogleTestExe UP-TO-DATE
+> Task :installFrcUserProgramTestOsxuniversalDebugGoogleTestExe UP-TO-DATE
+
+> Task :runFrcUserProgramTestOsxuniversalDebugGoogleTestExe FAILED
+HAL Extensions: No extensions found
+
+********** Robot program starting **********
+Not loading CameraServerShared
+NT: Listening on NT3 port 1735, NT4 port 5810
+[phoenix] CANbus Connected: sim
+[phoenix] CANbus Network Up: sim
+[phoenix] Signal Logger Started (Network: sim)
+	
+Error at fromGUISettings [RobotConfig.cpp:65]: Error: PathPlanner settings file could not be read
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+
+Error at RunRobot: Error: The robot program quit unexpectedly. This is usually due to a code error.
+  The above stacktrace can help determine where the error occurred.
+  See https://wpilib.org/stacktrace for more information.
+
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+	at  + 
+
+libc++abi: terminating due to uncaught exception of type frc::RuntimeError: Error: PathPlanner settings file could not be read
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':runFrcUserProgramTestOsxuniversalDebugGoogleTestExe'.
+> There were failing tests. See the results at: file:///Users/mihaipopescu/Desktop/drumbotcpp/DrumbotCpp/build/test-results/frcUserProgramTest/osxuniversal/debug/
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1s
+12 actionable tasks: 1 executed, 11 up-to-date

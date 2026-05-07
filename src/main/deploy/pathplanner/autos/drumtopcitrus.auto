@@ -1,0 +1,155 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "Drumtop 1"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "IntakeDown"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "RunIntake"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "drumtop2-2"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopIntake"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ScoreFull"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "TrackAndAim"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "SlowPush"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "RunHopper"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopTracking"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "IntakeDown"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 0.3
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "RunIntake"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "drumtop3-2"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "TrackAndAim"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "SlowPush"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "RunHopper"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopTracking"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "IntakeDown"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

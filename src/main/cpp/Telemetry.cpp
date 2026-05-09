@@ -41,10 +41,17 @@ void Telemetry::Telemeterize(subsystems::CommandSwerveDrivetrain::SwerveDriveSta
         state.Pose.Rotation().Radians().value()
     });
 
-    /* Telemeterize each module state to a Mechanism2d */
-    for (size_t i = 0; i < m_moduleSpeeds.size(); ++i) {
-        m_moduleDirections[i]->SetAngle(state.ModuleStates[i].angle.Radians());
-        m_moduleSpeeds[i]->SetAngle(state.ModuleStates[i].angle.Radians());
-        m_moduleSpeeds[i]->SetLength(state.ModuleStates[i].speed / (2 * MaxSpeed));
+    for (size_t i = 0; i < m_moduleCache.size(); ++i) {
+        m_moduleCache[i] = { state.ModuleStates[i].angle, state.ModuleStates[i].speed };
+    }
+    m_moduleCacheDirty.store(true, std::memory_order_relaxed);
+}
+
+void Telemetry::UpdateMechanism2d() {
+    if (!m_moduleCacheDirty.exchange(false, std::memory_order_relaxed)) return;
+    for (size_t i = 0; i < m_moduleCache.size(); ++i) {
+        m_moduleDirections[i]->SetAngle(m_moduleCache[i].angle.Radians());
+        m_moduleSpeeds[i]->SetAngle(m_moduleCache[i].angle.Radians());
+        m_moduleSpeeds[i]->SetLength(m_moduleCache[i].speed / (2 * MaxSpeed));
     }
 }

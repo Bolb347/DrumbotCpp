@@ -180,4 +180,31 @@ struct ShooterConstants {
     }
 };
 
+struct TurretConstants {
+    // Tilter PID/FF (slot 0 / slot 1)
+    static constexpr double kP1 = 2.5, kP2 = 1.5;
+    static constexpr double kI1 = 0.0, kD1 = 0.0, kG1 = 0.0, kS1 = 0.0, kA1 = 0.0, kV1 = 0.0;
+    static constexpr double currentLimit1 = 60.0;
+    static configs::TalonFXConfiguration BuildSpinnerConfig() {
+        return configs::TalonFXConfiguration{}
+            .WithMotorOutput(configs::MotorOutputConfigs{}
+                .WithNeutralMode(signals::NeutralModeValue::Brake)
+                .WithInverted(signals::InvertedValue::Clockwise_Positive))
+            .WithCurrentLimits(configs::CurrentLimitsConfigs{}
+                .WithStatorCurrentLimit(units::ampere_t{currentLimit1})
+                .WithSupplyCurrentLimit(units::ampere_t{currentLimit1})
+                .WithStatorCurrentLimitEnable(true)
+                .WithSupplyCurrentLimitEnable(true))
+            .WithVoltage(configs::VoltageConfigs{}
+                .WithPeakForwardVoltage(32.0_V)
+                .WithPeakReverseVoltage(-32.0_V))
+            .WithSlot0(configs::Slot0Configs{}
+                .WithKP(kP1).WithKI(kI1).WithKD(kD1)
+                .WithKG(kG1).WithKS(kS1).WithKA(kA1).WithKV(kV1))
+            .WithSlot1(configs::Slot1Configs{}
+                .WithKP(kP2).WithKI(kI1).WithKD(kD1)
+                .WithKG(kG1).WithKS(kS1).WithKA(kA1).WithKV(kV1));
+    }
+};
+
 } // namespace constants

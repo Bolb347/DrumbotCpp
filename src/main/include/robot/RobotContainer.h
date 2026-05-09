@@ -89,6 +89,8 @@ public:
 
     static void UpdateMatchTimers();
 
+    Telemetry m_logger;
+
 private:
     void ConfigureBindings();
     void ConfigAutoBuilder();
@@ -111,8 +113,6 @@ private:
     frc2::Trigger m_leftPedalPressed;
     frc2::Trigger m_middlePedalPressed;
     frc2::Trigger m_rightPedalPressed;
-
-    Telemetry m_logger;
 
     // NetworkTables
     static nt::NetworkTableInstance s_instance;

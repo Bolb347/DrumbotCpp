@@ -103,13 +103,10 @@ RobotContainer::RobotContainer()
     static subsystems::Hopper hop{};
     hopper = &hop;
 
-    static subsystems::SuperStructure ss{drivetrain, &controller, 50, 52, 51, 53, 45, 5, 62};
+    static subsystems::SuperStructure ss{drivetrain, &controller, 50, 52, 51, 53, 45, 5, 62, 0};
     superStructure = &ss;
 
     // Register named commands for PathPlanner
-    pathplanner::NamedCommands::registerCommand("PassLeft",       PassLeft().Unwrap());
-    pathplanner::NamedCommands::registerCommand("PassRight",      PassRight().Unwrap());
-    pathplanner::NamedCommands::registerCommand("ScoreFull",      Score().Unwrap());
     pathplanner::NamedCommands::registerCommand("RunIntake",      intake->Run().Unwrap());
     pathplanner::NamedCommands::registerCommand("StopIntake",     intake->Stop().Unwrap());
     pathplanner::NamedCommands::registerCommand("RunHopper",      hopper->Run().Unwrap());
@@ -118,18 +115,11 @@ RobotContainer::RobotContainer()
         intake->MoveDown().WithTimeout(0.3_s).Unwrap());
     pathplanner::NamedCommands::registerCommand("IntakeUp",       intake->Stow().Unwrap());
     pathplanner::NamedCommands::registerCommand("IntakeBumpAngle",intake->AngleForBump().Unwrap());
-    pathplanner::NamedCommands::registerCommand("SafeShot",       SafeShootAll().Unwrap());
-    pathplanner::NamedCommands::registerCommand("StopShooting",   StopSafeShootAll().Unwrap());
-    pathplanner::NamedCommands::registerCommand("StopTracking",   StopTracking().Unwrap());
-    pathplanner::NamedCommands::registerCommand("TrackAndAim",
-        superStructure->TrackAndAimCommand().WithTimeout(3.5_s).Unwrap());
+    pathplanner::NamedCommands::registerCommand("BeginTracking",    superStructure->StartTrackingCmd());
+    pathplanner::NamedCommands::registerCommand("StopTracking",    superStructure->StopTrackingCmd());
     pathplanner::NamedCommands::registerCommand("SlowPush",       intake->SlowPush().Unwrap());
     pathplanner::NamedCommands::registerCommand("StartSpinUp",    superStructure->StartSpunUpCmd().Unwrap());
     pathplanner::NamedCommands::registerCommand("StopSpinUp",     superStructure->StopSpunUpCmd().Unwrap());
-    pathplanner::NamedCommands::registerCommand("StartAutoTracking",
-        frc2::cmd::RunOnce([]{isAutoTracking = true; superStructure->BeginTracking();}).Unwrap());
-    pathplanner::NamedCommands::registerCommand("StopAutoTracking",
-        frc2::cmd::RunOnce([]{isAutoTracking = false; superStructure->StopTracking();}).Unwrap());
 
     // Warm up solver
     superStructure->solver.Solve(
@@ -158,31 +148,41 @@ RobotContainer::RobotContainer()
     s_instance.AddListener(
         s_chooserTable->GetEntry("active").GetTopic(),
         nt::EventFlags::kValueAll,
-        [](const nt::Event& event) {
-            RebuildAutoCommand(); 
+        [](const nt::Event&) noexcept {
+            try { RebuildAutoCommand(); }
+            catch (...) { std::fprintf(stderr, "Exception in chooser listener\n"); }
         }
     );
 
     s_instance.AddListener(
         s_mirrorTable->GetEntry("active").GetTopic(),
         nt::EventFlags::kValueAll,
-        [](const nt::Event& event) {
-            RebuildAutoCommand(); 
+        [](const nt::Event&) noexcept {
+            try { RebuildAutoCommand(); }
+            catch (...) { std::fprintf(stderr, "Exception in mirror listener\n"); }
         }
     );
 
-    isBlueAlliance.AddListener([](bool, bool) { RebuildAutoCommand(); });
+    isBlueAlliance.AddListener([](bool, bool) noexcept {
+        try { RebuildAutoCommand(); }
+        catch (...) { std::fprintf(stderr, "Exception in alliance listener\n"); }
+    });
 
     ConfigAutoBuilder();
     ConfigureBindings();
     WarmupAutos();
 
-    initialized = true;
-    RebuildAutoCommand();   // build the initial auto command
+    try {
+        RebuildAutoCommand();
+    } catch (...) {
+        std::fprintf(stderr, "[ctor] RebuildAutoCommand failed\n");
+        autoCommand = frc2::cmd::None();
+    }
 }
 
 // ── Rebuild Auto Command ─────────────────────────────────────────────────────
 void RobotContainer::RebuildAutoCommand() {
+    try {
     if (!initialized) return;
     std::string autoName = autoChooser.GetSelected();
     if (autoName.empty() || autoName == "None") {
@@ -229,10 +229,17 @@ void RobotContainer::RebuildAutoCommand() {
         }
     } else {
         try {
-            autoCommand = pathplanner::AutoBuilder::buildAuto(autoName);
+            autoCommand = pathplanner::PathPlannerAuto(autoName).ToPtr();
         } catch (std::exception& e) {
             autoCommand = frc2::cmd::None();
         }
+    }
+    } catch (std::exception& e) {
+        std::fprintf(stderr, "[RebuildAutoCommand] Exception: %s\n", e.what());
+        autoCommand = frc2::cmd::None();
+    } catch (...) {
+        std::fprintf(stderr, "[RebuildAutoCommand] Unknown exception\n");
+        autoCommand = frc2::cmd::None();
     }
 }
 
@@ -335,22 +342,19 @@ void RobotContainer::ConfigureBindings() {
     controller.Cross().WhileTrue(drivetrain->ApplyRequest([this]() -> auto&& {
         return brake;
     }));
-    controller.R2().OnTrue(superStructure->StopIntakingCmd()
-        .AndThen(superStructure->StartSpunUpCmd()));
-    controller.L1().OnTrue(
+    controller.L1().OnTrue(frc2::cmd::Either(
+        superStructure->StopTrackingCmd().AlongWith(hopper->Stop()), 
+        superStructure->StartTrackingCmd().AlongWith(hopper->Run()),
+        [this] { return superStructure->IsTracking(); }
+    ));
+
+    controller.R1().OnTrue(frc2::cmd::Either(
         superStructure->StopIntakingCmd()
-        .AndThen(superStructure->StopSpunUpCmd())
-        .AndThen(superStructure->TrackAndAimCommand())
-        .AlongWith(hopper->Run())
-        .AlongWith(intake->SlowPush()));
-    controller.L2().OnTrue(
-        superStructure->StopTrackingCmd()
-        .AndThen(superStructure->StopSpunUpCmd())
-        .AndThen(superStructure->StopPassingCmd())
-        .AndThen(superStructure->StartIntakingCmd())
-        .AlongWith(intake->MoveDown())
-        .AndThen(intake->Run())
-        .AndThen(hopper->Stop()));
+            .AlongWith(intake->Stow().AndThen(intake->Stop())),
+        superStructure->StartIntakingCmd()
+            .AlongWith(intake->MoveDown().AndThen(intake->Run())),
+        [this] { return superStructure->IsIntaking(); }
+    ));
     controller.POVLeft().OnTrue(intake->MoveDown());
     controller.POVRight().OnTrue(
         intake->Stow()
@@ -358,40 +362,13 @@ void RobotContainer::ConfigureBindings() {
         .AndThen(hopper->Stop())
         .AndThen(superStructure->StopIntakingCmd()));
     controller.POVUp().OnTrue(intake->AutoZero());
-    controller.R1().OnTrue(
-        intake->MoveDown()
-        .AndThen(intake->ToggleIntake())
-        .AlongWith(hopper->Stop())
-        .AndThen(superStructure->StartIntakingCmd())
-        .AndThen(frc2::cmd::Either(
-            frc2::cmd::None(),
-            superStructure->StopIntakingCmd()
-                .AndThen(intake->Stop())
-                .AndThen(hopper->Stop()),
-            []{ return intake->state != subsystems::Intake::IntakeState::STOPPED; })));
     controller.Circle()
         .OnTrue(superStructure->StartOuttakingCmd()
             .AndThen(hopper->Outtake())
-            .AlongWith(intake->Outtake()))
+            .AndThen(intake->Outtake()))
         .OnFalse(superStructure->StopOuttakingCmd()
             .AndThen(hopper->Stop())
-            .AlongWith(intake->Stop()));
-    controller.Triangle()
-        .WhileTrue(superStructure->SafeShotCommand1()
-            .AlongWith(hopper->Run())
-            .AlongWith(intake->SlowPush()))
-        .OnFalse(intake->MoveDown()
-            .AlongWith(hopper->Stop())
-            .AndThen(frc2::cmd::Wait(0.3_s))
-            .AndThen(intake->Run()));
-    controller.Square()
-        .WhileTrue(superStructure->SafeShotCommand2()
-            .AlongWith(hopper->Run())
-            .AlongWith(intake->SlowPush()))
-        .OnFalse(intake->MoveDown()
-            .AlongWith(hopper->Stop())
-            .AndThen(frc2::cmd::Wait(0.3_s))
-            .AndThen(intake->Run()));
+            .AndThen(intake->Stop()));
     controller.POVDown()
         .OnTrue(superStructure->StartZoneBasedCmd()
             .AlongWith(hopper->Run())
@@ -441,7 +418,9 @@ void RobotContainer::ConfigAutoBuilder() {
                 return std::nullopt;
             });
     } catch (std::exception const& ex) {
-        std::fprintf(stderr, "Failed to configure AutoBuilder: %s\n", ex.what());
+    std::fprintf(stderr, "Failed to configure AutoBuilder: %s\n", ex.what());
+    } catch (...) {
+        std::fprintf(stderr, "Failed to configure AutoBuilder: unknown exception\n");
     }
 }
 

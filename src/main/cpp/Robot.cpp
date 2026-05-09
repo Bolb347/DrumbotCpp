@@ -28,6 +28,7 @@ void Robot::RobotInit() {
 
 void Robot::RobotPeriodic() {
     frc2::CommandScheduler::GetInstance().Run();
+    m_robotContainer.m_logger.UpdateMechanism2d();
     frc::SmartDashboard::PutNumber("Batt", frc::RobotController::GetBatteryVoltage().value());
     frc::SmartDashboard::PutBoolean("IsBlue", RobotContainer::isBlueAlliance.GetValue());
 

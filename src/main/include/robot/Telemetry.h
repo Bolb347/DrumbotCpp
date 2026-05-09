@@ -60,6 +60,13 @@ private:
             ->Append<frc::MechanismLigament2d>("Direction", 0.1, 0_deg, 0, frc::Color8Bit{frc::Color::kWhite}),
     };
 
+    struct ModuleCache {
+        frc::Rotation2d angle;
+        units::meters_per_second_t speed;
+    };
+    std::array<ModuleCache, 4> m_moduleCache{};
+    std::atomic<bool> m_moduleCacheDirty{false};
+
 public:
     /**
      * Construct a telemetry object with the specified max speed of the robot.
@@ -70,4 +77,6 @@ public:
 
     /** Accept the swerve drive state and telemeterize it to SmartDashboard and SignalLogger. */
     void Telemeterize(subsystems::CommandSwerveDrivetrain::SwerveDriveState const &state);
+
+    void UpdateMechanism2d();
 };

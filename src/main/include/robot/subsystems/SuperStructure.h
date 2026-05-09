@@ -11,6 +11,7 @@
 
 #include "Feeder.h"
 #include "Shooter.h"
+#include "Turret.h"
 #include "CommandSwerveDrivetrain.h"
 #include "robot/util/BallisticsSolver2.h"
 
@@ -23,7 +24,8 @@ public:
                    int shooterMotorID1, int shooterMotorID2,
                    int shooterMotorID3, int shooterMotorID4,
                    int hoodMotorID,
-                   int feederMotorID1, int feederMotorID2);
+                   int feederMotorID1, int feederMotorID2,
+                   int turretMotorID);
 
     // State setters
     void BeginTracking();
@@ -42,6 +44,14 @@ public:
     void StopSpunUp();
     void BeginIntaking();
     void StopIntaking();
+
+    bool IsIntaking() {
+        return m_isIntaking;
+    }
+
+    bool IsTracking() {
+        return m_isTracking;
+    }
 
     // Command factories
     frc2::CommandPtr StartSpunUpCmd();
@@ -62,10 +72,6 @@ public:
     frc2::CommandPtr StopIntakingCmd();
     frc2::CommandPtr SwitchModes();
 
-    frc2::CommandPtr TrackAndAimCommand();
-    frc2::CommandPtr SafeShotCommand1();
-    frc2::CommandPtr SafeShotCommand2();
-
     void Periodic() override;
 
     util::BallisticsSolver2::BallisticSolution solution;
@@ -73,6 +79,7 @@ public:
 
     Shooter* shooter;
     Feeder*  feeder;
+    Turret* turret;
 
 private:
     CommandSwerveDrivetrain* m_drivetrain;

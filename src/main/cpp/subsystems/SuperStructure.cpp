@@ -22,7 +22,7 @@ using namespace ctre::phoenix6;
 SuperStructure::SuperStructure(CommandSwerveDrivetrain* drivetrain,
                                frc2::CommandPS5Controller* controller,
                                int s1, int s2, int s3, int s4,
-                               int hoodID, int f1, int f2)
+                               int hoodID, int f1, int f2, int turretID)
     : m_drivetrain(drivetrain), m_controller(controller)
 {
     const CANBus& bus = constants::kSecondaryCanbus;
@@ -33,6 +33,7 @@ SuperStructure::SuperStructure(CommandSwerveDrivetrain* drivetrain,
     auto* hood = new hardware::TalonFX{hoodID, bus};
     shooter = new Shooter{m1, m2, m3, m4, hood, drivetrain};
     feeder  = new Feeder{new hardware::TalonFX{f1, bus}, new hardware::TalonFX{f2, bus}};
+    turret = new Turret(new hardware::TalonFX{turretID, bus}, m_drivetrain);
 
     auto rangeCfg = configs::CANrangeConfiguration{}
         .WithFovParams(configs::FovParamsConfigs{}
@@ -44,7 +45,7 @@ SuperStructure::SuperStructure(CommandSwerveDrivetrain* drivetrain,
 }
 
 // ── State management ────────────────────────────────────────────────────────
-void SuperStructure::BeginTracking()   { m_isAtTarget = false; m_isTracking = true; m_isIntaking = false; }
+void SuperStructure::BeginTracking()   { m_isAtTarget = false; m_isTracking = true; }
 void SuperStructure::StopTracking()    { m_isAtTarget = false; m_isTracking = false; }
 void SuperStructure::BeginOuttaking()  { m_isOuttaking = true; }
 void SuperStructure::StopOuttaking()   { m_isOuttaking = false; }
@@ -58,7 +59,7 @@ void SuperStructure::StartZoneBased()  { m_isZoneBased = true; }
 void SuperStructure::StopZoneBased()   { m_isZoneBased = false; }
 void SuperStructure::StartSpunUp()     { m_isSpunUp = true; }
 void SuperStructure::StopSpunUp()      { m_isSpunUp = false; }
-void SuperStructure::BeginIntaking()   { m_isIntaking = true; m_isTracking = false; }
+void SuperStructure::BeginIntaking()   { m_isIntaking = true; }
 void SuperStructure::StopIntaking()    { m_isIntaking = false; }
 
 // ── Command factories ────────────────────────────────────────────────────────
@@ -82,8 +83,7 @@ frc2::CommandPtr SuperStructure::SwitchModes()         { return RunOnce([this]{ 
 
 // ── Periodic ─────────────────────────────────────────────────────────────────
 void SuperStructure::Periodic() {
-    bool readyToShoot = false;
-
+    // 1. Common Ballistics Math (Runs regardless of state)
     frc::ChassisSpeeds speeds = frc::ChassisSpeeds::FromRobotRelativeSpeeds(
         m_drivetrain->GetState().Speeds,
         m_drivetrain->GetState().Pose.Rotation());
@@ -95,18 +95,7 @@ void SuperStructure::Periodic() {
         ? util::BallisticsSolver2::ShotMode::HIGHARC
         : util::BallisticsSolver2::ShotMode::LOWARC;
 
-    bool shooterReady  = shooter->IsAtTarget();
-    bool trackingReady = m_isTracking && solution.valid;
-    bool safeReady     = m_isSafeShooting1 || m_isSafeShooting2;
-
-    if ((trackingReady || safeReady) && shooterReady) {
-        if (!m_shooterAtSpeedTimer.IsRunning()) m_shooterAtSpeedTimer.Restart();
-    } else {
-        m_shooterAtSpeedTimer.Stop();
-        m_shooterAtSpeedTimer.Reset();
-    }
-    readyToShoot = m_shooterAtSpeedTimer.HasElapsed(0.35_s);
-
+    // Solve for tracking if any shooting mode is active
     if (m_isTracking || m_isSafeShooting1 || m_isSafeShooting2) {
         solution = solver.Solve(
             m_drivetrain->GetPositionRelativeField().Translation(),
@@ -122,120 +111,55 @@ void SuperStructure::Periodic() {
         solution = util::BallisticsSolver2::BallisticSolution{};
     }
 
-    frc::SmartDashboard::PutBoolean("Solver/Valid",         solution.valid);
-    frc::SmartDashboard::PutNumber ("Solver/Hood",          solution.hoodAngle);
-    frc::SmartDashboard::PutNumber ("Solver/ExitVel",       solution.exitVelocity);
-    frc::SmartDashboard::PutNumber ("Solver/TurretAngle",   solution.turretAngle);
-    frc::SmartDashboard::PutNumber ("Solver/TOF",           solution.timeOfFlight);
-    frc::SmartDashboard::PutNumberArray("Target",
-        std::vector<double>{RobotContainer::target.X().value(),
-                            RobotContainer::target.Y().value(),
-                            RobotContainer::target.Z().value(), 0.0});
-
-    using FC = constants::FeederConstants;
-
+    // 2. Shooter & Turret Control Logic (Independent)
+    bool shooterReady = shooter->IsAtTarget();
+    bool trackingReady = m_isTracking && solution.valid;
+    
     if (m_isOuttaking) {
         shooter->SetExitVelTarget(0.0);
         shooter->GoToTargetHoodAngle(0.0);
-        feeder->GoToTargetSpeed(-FC::feederTargetSpeed);
-    } else if (m_isIntaking) {
-        shooter->GoToTargetHoodAngle(0.0);
-    } else if (m_isTracking && solution.valid) {
-        if (!std::isfinite(solution.hoodAngle)) return;
+        turret->goToTarget(0.0); 
+    } else if (trackingReady) {
         shooter->SetExitVelTarget(solution.exitVelocity);
         shooter->GoToTargetHoodAngle(solution.hoodAngle);
-        feeder->GoToTargetSpeed(readyToShoot ? FC::feederTargetSpeed : -2.0);
+        turret->goToTargetFieldRelative(solution.turretAngle);
     } else if (m_isSafeShooting1) {
-        shooter->GoToTargetHoodAngle(0.0);
         shooter->SetExitVelTarget(7.0);
-        feeder->GoToTargetSpeed(readyToShoot ? FC::feederTargetSpeed : 0.0);
-    } else if (m_isSafeShooting2) {
-        shooter->GoToTargetHoodAngle(20.0);
-        shooter->SetExitVelTarget(8.0);
-        feeder->GoToTargetSpeed(readyToShoot ? FC::feederTargetSpeed : 0.0);
+        shooter->GoToTargetHoodAngle(0.0);
+        // turret stays where it is or add logic to face forward
     } else if (m_isSpunUp) {
         shooter->GoToTargetSpeed(30.0);
-        shooter->GoToTargetHoodAngle(0.0);
-        feeder->GoToTargetSpeed(-10.0);
     } else {
+        // Idle Shooter
         shooter->SetExitVelTarget(0.0);
-        shooter->GoToTargetHoodAngle(0.0);
+        if (!m_isIntaking) shooter->GoToTargetHoodAngle(0.0);
+    }
+
+    // 3. Feeder & Intake Interaction Logic (Independent)
+    using FC = constants::FeederConstants;
+    
+    // Logic for the Feeder (the bridge between intake and shooter)
+    if (m_isOuttaking) {
+        feeder->GoToTargetSpeed(-FC::feederTargetSpeed);
+    } else if (trackingReady || m_isSafeShooting1 || m_isSafeShooting2) {
+        // Check if shooter is at speed to allow feeding
+        if (shooterReady) {
+            if (!m_shooterAtSpeedTimer.IsRunning()) m_shooterAtSpeedTimer.Restart();
+        } else {
+            m_shooterAtSpeedTimer.Stop();
+            m_shooterAtSpeedTimer.Reset();
+        }
+        
+        bool readyToShoot = m_shooterAtSpeedTimer.HasElapsed(0.35_s);
+        
+        // If intaking while shooting, we want the feeder to move only when ready to fire
+        // otherwise it holds the ball for the shooter.
+        feeder->GoToTargetSpeed(readyToShoot ? FC::feederTargetSpeed : (m_isIntaking ? 2.0 : 0.0));
+    } else if (m_isIntaking) {
+        // Just intaking, feed balls into the staging area
+        feeder->GoToTargetSpeed(2.0); 
+        shooter->GoToTargetHoodAngle(0.0); // Safety: stow hood while intaking
+    } else {
         feeder->GoToTargetSpeed(0.0);
     }
-}
-
-frc2::CommandPtr SuperStructure::TrackAndAimCommand() {
-    return m_drivetrain->Run([this] {
-        if (solution.valid) {
-            // Calculate target and current angles for the error check
-            double targetDeg  = solution.turretAngle +
-                                (RobotContainer::isBlueAlliance.GetValue() ? 0.0 : 180.0);
-            double currentDeg = m_drivetrain->GetState().Pose.Rotation().Degrees().value() +
-                                (RobotContainer::isBlueAlliance.GetValue() ? 0.0 : 180.0);
-            double angleErr   = std::abs(frc::InputModulus(targetDeg - currentDeg, -180.0, 180.0));
-
-            frc::SmartDashboard::PutBoolean("Defense mode", m_isDefenseMode);
-            frc::SmartDashboard::PutNumber ("Angle error",  angleErr);
-
-            double maxSpd = RobotContainer::MaxSpeed;
-            
-            // If angle error is large, use FacingAngle request
-            if (angleErr > (m_isDefenseMode ? 5.0 : 3.0)) {
-                m_drivetrain->SetControl(
-                    m_facingAngleRequest // Use persistent member variable
-                        .WithTargetDirection(frc::Rotation2d{units::degree_t{targetDeg}})
-                        .WithVelocityX(units::meters_per_second_t{-m_controller->GetLeftY() * maxSpd / 2})
-                        .WithVelocityY(units::meters_per_second_t{-m_controller->GetLeftX() * maxSpd / 2})
-                        .WithHeadingPID(3.5, 0.02, 0)
-                        .WithRotationalDeadband(units::radians_per_second_t{0.03}));
-            } 
-            else {
-                double mag = std::hypot(m_controller->GetLeftY(), m_controller->GetLeftX());
-                
-                // If not moving much and in defense mode, X-out/PointWheels
-                if (mag < 0.2 && m_isDefenseMode) {
-                    m_drivetrain->SetControl(
-                        m_pointRequest // Use persistent member variable
-                            .WithModuleDirection(frc::Rotation2d{0_deg}));
-                } 
-                else {
-                    // Otherwise, just drive field-centric with zero rotation (already at target)
-                    m_drivetrain->SetControl(
-                        m_fieldCentricRequest // Use persistent member variable
-                            .WithVelocityX(units::meters_per_second_t{-m_controller->GetLeftY() * maxSpd / 2})
-                            .WithVelocityY(units::meters_per_second_t{-m_controller->GetLeftX() * maxSpd / 2})
-                            .WithRotationalRate(0_rad_per_s));
-                }
-            }
-        } 
-        else {
-            // If solution is invalid, fallback to standard field-centric driving
-            m_drivetrain->SetControl(
-                m_fieldCentricRequest // Use persistent member variable
-                    .WithVelocityX(units::meters_per_second_t{-m_controller->GetLeftY() * RobotContainer::MaxSpeed})
-                    .WithVelocityY(units::meters_per_second_t{-m_controller->GetLeftX() * RobotContainer::MaxSpeed})
-                    .WithRotationalRate(units::radians_per_second_t{-m_controller->GetRightX() * RobotContainer::MaxAngularRate}));
-        }
-    })
-    .BeforeStarting([this] { BeginTracking(); })
-    .FinallyDo([this] { StopTracking(); })
-    .WithName("StickyTrackAndAim");
-}
-
-frc2::CommandPtr SuperStructure::SafeShotCommand1() {
-    auto cmd = this->Run([this] {
-        StartSafeShooting1();
-        m_drivetrain->SetControl(RobotContainer::brake);
-    }).FinallyDo([this] { StopSafeShooting1(); });
-    cmd.get()->AddRequirements(m_drivetrain);
-    return cmd;
-}
-
-frc2::CommandPtr SuperStructure::SafeShotCommand2() {
-    auto cmd = this->Run([this] {
-        StartSafeShooting2();
-        m_drivetrain->SetControl(RobotContainer::brake);
-    }).FinallyDo([this] { StopSafeShooting2(); });
-    cmd.get()->AddRequirements(m_drivetrain);
-    return cmd;
 }

@@ -145,7 +145,6 @@ public:
         if (utils::IsSimulation()) {
             StartSimThread();
         }
-        ConfigureAutoBuilder();
     }
 
     /**
@@ -172,7 +171,6 @@ public:
         if (utils::IsSimulation()) {
             StartSimThread();
         }
-        ConfigureAutoBuilder();
     }
 
     /**
@@ -206,7 +204,6 @@ public:
         if (utils::IsSimulation()) {
             StartSimThread();
         }
-        ConfigureAutoBuilder();
     }
 
     /**
@@ -327,7 +324,6 @@ public:
                                         double targetDegrees);
 
 private:
-    void ConfigureAutoBuilder();
     void StartSimThread();
 };
 

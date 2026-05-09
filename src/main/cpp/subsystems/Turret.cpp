@@ -17,13 +17,42 @@ Turret::Turret(hardware::TalonFX* spinner, CommandSwerveDrivetrain *drivetrain) 
 }
 
 void Turret::goToTargetFieldRelative(double target) {
-    double robotRotation = m_drivetrain->GetState().Pose.Rotation().Radians().value() / (2.0 * std::numbers::pi);
+    target /= 360.0;
 
     if (!RobotContainer::isBlueAlliance.GetValue()) {
         target += 0.5;
     }
+
+    double robotRotation = m_drivetrain->GetState().Pose.Rotation().Radians().value() / (2.0 * std::numbers::pi);
     double robotRelativeTarget = target - robotRotation;
-    goToTarget(robotRelativeTarget);
+    robotRelativeTarget = robotRelativeTarget - std::floor(robotRelativeTarget + 0.5);
+
+    constexpr double kLimit = 0.75;
+
+    double candidates[3] = {
+        robotRelativeTarget - 1.0,
+        robotRelativeTarget,
+        robotRelativeTarget + 1.0
+    };
+
+    double best = std::numeric_limits<double>::max();
+    double bestDist = std::numeric_limits<double>::max();
+
+    for (double c : candidates) {
+        if (c >= -kLimit && c <= kLimit) {
+            double dist = std::abs(c - m_target);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = c;
+            }
+        }
+    }
+
+    if (best == std::numeric_limits<double>::max()) {
+        best = std::clamp(candidates[1], -kLimit, kLimit);
+    }
+
+    goToTarget(best);
 }
 
 void Turret::goToTarget(double target) {

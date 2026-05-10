@@ -63,3 +63,7 @@ void Turret::goToTarget(double target) {
 void Turret::Periodic() {
     m_spinner->SetControl(controls::PositionVoltage{units::turn_t{m_target * m_ratio}});
 }
+
+double Turret::getAngleDegrees() {
+    return m_spinner->GetRotorPosition().GetValueAsDouble() * 360;
+}

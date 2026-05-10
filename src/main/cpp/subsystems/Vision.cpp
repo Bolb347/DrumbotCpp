@@ -1,13 +1,15 @@
 #include "robot/subsystems/Vision.h"
 #include "robot/vision/VisionConstants.h"
+#include "robot/subsystems/Turret.h"
 
 using namespace subsystems;
 
-Vision::Vision(CommandSwerveDrivetrain* drivetrain) {
+Vision::Vision(CommandSwerveDrivetrain* drivetrain, Turret* turret) {
+    m_turret = turret;
     const auto& names = vision::VisionConstants::cameraNames;
     const auto& poses = vision::VisionConstants::cameraPosesInBotSpace;
     for (size_t i = 0; i < names.size(); ++i) {
-        m_cameras.emplace_back(names[i], drivetrain, poses[i], &drivetrain->GetPigeon2());
+        m_cameras.emplace_back(names[i], drivetrain, poses[i], &drivetrain->GetPigeon2(), [this] { return m_turret->getAngleDegrees(); });
     }
 
     const auto& photonNames = vision::VisionConstants::photonCameraNames;

@@ -23,6 +23,7 @@ class Turret : public frc2::SubsystemBase {
 
   void goToTargetFieldRelative(double target);
   void goToTarget(double target);
+  double getAngleDegrees();
 
  private:
   // Components (e.g. motor controllers and sensors) should generally be

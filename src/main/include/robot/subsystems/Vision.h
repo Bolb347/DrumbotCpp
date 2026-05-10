@@ -4,12 +4,13 @@
 #include "robot/vision/BlobCam.h"
 #include "robot/vision/PhotonBlobCam.h"
 #include "CommandSwerveDrivetrain.h"
+#include "Turret.h"
 
 namespace subsystems {
 
 class Vision : public frc2::SubsystemBase {
 public:
-    explicit Vision(CommandSwerveDrivetrain* drivetrain);
+    explicit Vision(CommandSwerveDrivetrain* drivetrain, Turret* turret);
 
     void ResetOrientation();
     void StopIMUData();
@@ -18,6 +19,7 @@ public:
 private:
     std::vector<vision::BlobCam> m_cameras;
     std::vector<vision::PhotonBlobCam> m_photonCameras;
+    Turret* m_turret;
 };
 
 } // namespace subsystems

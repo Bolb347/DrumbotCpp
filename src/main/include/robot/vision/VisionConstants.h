@@ -12,6 +12,8 @@ namespace vision {
 struct VisionConstants {
     static const std::vector<frc::Pose3d> cameraPosesInBotSpace;
     static const std::vector<std::string> cameraNames;
+    static const std::vector<frc::Pose3d> photonCameraPosesInBotSpace;
+    static const std::vector<std::string> photonCameraNames;
 };
 
 } // namespace vision

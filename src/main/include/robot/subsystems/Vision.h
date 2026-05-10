@@ -2,6 +2,7 @@
 #include <vector>
 #include <frc2/command/SubsystemBase.h>
 #include "robot/vision/BlobCam.h"
+#include "robot/vision/PhotonBlobCam.h"
 #include "CommandSwerveDrivetrain.h"
 
 namespace subsystems {
@@ -16,6 +17,7 @@ public:
 
 private:
     std::vector<vision::BlobCam> m_cameras;
+    std::vector<vision::PhotonBlobCam> m_photonCameras;
 };
 
 } // namespace subsystems

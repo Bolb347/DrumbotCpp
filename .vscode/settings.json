@@ -95,6 +95,14 @@
     "__verbose_abort": "cpp",
     "execution": "cpp",
     "__hash_table": "cpp",
-    "__node_handle": "cpp"
+    "__node_handle": "cpp",
+    "__bit_reference": "cpp",
+    "__split_buffer": "cpp",
+    "locale": "cpp",
+    "__locale": "cpp",
+    "ios": "cpp",
+    "charconv": "cpp",
+    "__verbose_trap": "cpp",
+    "__log_hardening_failure": "cpp"
   }
 }

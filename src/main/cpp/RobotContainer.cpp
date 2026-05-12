@@ -94,7 +94,10 @@ RobotContainer::RobotContainer()
     static subsystems::CommandSwerveDrivetrain dt = TunerConstants::CreateDrivetrain();
     drivetrain = &dt;
 
-    static subsystems::Vision vis{drivetrain};
+    static subsystems::SuperStructure ss{drivetrain, &controller, 50, 52, 51, 53, 45, 5, 62, 0};
+    superStructure = &ss;
+
+    static subsystems::Vision vis{drivetrain, ss.turret};
     vision = &vis;
 
     static subsystems::Intake intk{drivetrain};
@@ -102,9 +105,6 @@ RobotContainer::RobotContainer()
 
     static subsystems::Hopper hop{};
     hopper = &hop;
-
-    static subsystems::SuperStructure ss{drivetrain, &controller, 50, 52, 51, 53, 45, 5, 62, 0};
-    superStructure = &ss;
 
     // Register named commands for PathPlanner
     pathplanner::NamedCommands::registerCommand("RunIntake",      intake->Run().Unwrap());

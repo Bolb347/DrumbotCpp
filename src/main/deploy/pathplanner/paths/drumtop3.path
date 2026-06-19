@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.9293571428571425,
+        "y": 7.355267857142857
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 2.2611249999999994,
+        "y": 6.820785714285714
+      },
+      "isLocked": false,
+      "linkedName": "drumtop2end"
+    },
+    {
+      "anchor": {
+        "x": 2.9597863247863243,
+        "y": 6.44591452991453
+      },
+      "prevControl": {
+        "x": 1.6478756105006114,
+        "y": 6.3649323870573875
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "drumtop3end"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.5,
+    "maxAcceleration": 2.75,
+    "maxAngularVelocity": 720.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -53.130102354155895
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -90.98776039963981
+  },
+  "useDefaultConstraints": true
+}

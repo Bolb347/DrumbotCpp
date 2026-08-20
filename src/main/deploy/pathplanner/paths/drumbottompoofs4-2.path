@@ -1,0 +1,59 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 2.6028673323823104,
+        "y": 2.669971469329529
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 1.5936519258202564,
+        "y": -0.008330955777461568
+      },
+      "isLocked": false,
+      "linkedName": "drumbottompoofs3-2end"
+    },
+    {
+      "anchor": {
+        "x": 7.752453637660485,
+        "y": 0.7550499286733237
+      },
+      "prevControl": {
+        "x": 4.517788873038516,
+        "y": 0.41864479315263853
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.5,
+      "rotationDegrees": 180.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.5,
+    "maxAcceleration": 2.75,
+    "maxAngularVelocity": 720.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 4.0,
+    "rotation": 180.0
+  },
+  "reversed": false,
+  "folder": "drumbottom",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 45.00000000000027
+  },
+  "useDefaultConstraints": true
+}

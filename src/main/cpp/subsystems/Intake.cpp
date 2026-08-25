@@ -103,7 +103,7 @@ void Intake::Periodic() {
     }
 
     if (state == IntakeState::INTAKING) {
-        double velRPS = 60.0 * currentSpeed + m_minSpeed;
+        double velRPS = 30.0 * currentSpeed + m_minSpeed;
         controls::VelocityVoltage vel{units::turns_per_second_t{velRPS}};
         vel.EnableFOC = true;
         frc::SmartDashboard::PutNumber("IntakeTargetSpeed", velRPS);

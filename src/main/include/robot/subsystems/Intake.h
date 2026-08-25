@@ -45,7 +45,7 @@ private:
 
     double m_intakeSpeed  = 40.0;
     double m_downPosition = 12.83;
-    double m_minSpeed     = 40.0;
+    double m_minSpeed     = 80.0;
 
     CommandSwerveDrivetrain* m_drivetrain;
 };

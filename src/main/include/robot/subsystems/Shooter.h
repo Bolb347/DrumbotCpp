@@ -32,6 +32,7 @@ public:
     void GoToTargetRot(double targetRot);
     void SetExitVelTarget(double targetExitVelocity);
     bool IsAtTarget();
+    void SetIdleProfile(bool idle);
 
     void Periodic() override;
 
@@ -49,6 +50,7 @@ private:
     ctre::phoenix6::StatusSignal<units::turns_per_second_t> m_vel4;
 
     double m_currTarget = 0.0;
+    bool m_idleProfile = false;
     frc::Debouncer m_stableDebouncer{0.4_s, frc::Debouncer::DebounceType::kBoth};
 };
 

@@ -139,6 +139,11 @@ void SuperStructure::Periodic() {
     bool wasIdle = m_wasIdle;
     m_wasIdle = false;
 
+    bool idleProfile = !(m_isOuttaking || m_isIntaking ||
+                         (m_isTracking && solution.valid) ||
+                         m_isSafeShooting1 || m_isSafeShooting2 || m_isSpunUp);
+    shooter->SetIdleProfile(idleProfile);
+
     if (m_isOuttaking) {
         shooter->SetExitVelTarget(0.0);
         shooter->GoToTargetHoodAngle(0.0);

@@ -58,8 +58,20 @@ void Shooter::GoToTargetSpeed(double targetSpeed) {
     targetSpeed = util::Clamp(targetSpeed, -200.0, 200.0);
     controls::VelocityVoltage req{units::turns_per_second_t{targetSpeed}};
     req.EnableFOC = true;
+    req.Slot = m_idleProfile ? 1 : 0;
     m_motor1->SetControl(req);
     // motors 2-4 are followers, so only motor1 needs to be commanded
+}
+
+void Shooter::SetIdleProfile(bool idle) {
+    if (idle == m_idleProfile) return;
+    m_idleProfile = idle;
+    auto limits = idle ? constants::ShooterConstants::BuildFlywheelIdleLimits()
+                       : constants::ShooterConstants::BuildFlywheelNormalLimits();
+    m_motor1->GetConfigurator().Apply(limits, 0_s);
+    m_motor2->GetConfigurator().Apply(limits, 0_s);
+    m_motor3->GetConfigurator().Apply(limits, 0_s);
+    m_motor4->GetConfigurator().Apply(limits, 0_s);
 }
 
 void Shooter::GoToTargetHoodAngle(double targetAngleDegFromVertical) {

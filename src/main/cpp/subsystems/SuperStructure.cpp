@@ -2,6 +2,7 @@
 #include "robot/subsystems/CommandSwerveDrivetrain.h"
 #include "robot/RobotContainer.h"
 #include "robot/Constants.h"
+#include "robot/util/Util.h"
 
 #include "ctre/phoenix6/TalonFX.hpp"
 #include "ctre/phoenix6/CANBus.hpp"
@@ -47,7 +48,6 @@ SuperStructure::SuperStructure(CommandSwerveDrivetrain* drivetrain,
     m_facingAngleRequest.RotationalDeadband = 0_rad_per_s;
 }
 
-// ── State management ────────────────────────────────────────────────────────
 void SuperStructure::BeginTracking()   { m_isAtTarget = false; m_isTracking = true; m_isIntaking = false; }
 void SuperStructure::StopTracking()    { m_isAtTarget = false; m_isTracking = false; }
 void SuperStructure::BeginOuttaking()  { m_isOuttaking = true; }
@@ -65,7 +65,6 @@ void SuperStructure::StopSpunUp()      { m_isSpunUp = false; }
 void SuperStructure::BeginIntaking()   { m_isIntaking = true; m_isTracking = false; }
 void SuperStructure::StopIntaking()    { m_isIntaking = false; }
 
-// ── Command factories ────────────────────────────────────────────────────────
 frc2::CommandPtr SuperStructure::StartSpunUpCmd()      { return RunOnce([this]{ StartSpunUp(); }); }
 frc2::CommandPtr SuperStructure::StopSpunUpCmd()       { return RunOnce([this]{ StopSpunUp(); }); }
 frc2::CommandPtr SuperStructure::StartZoneBasedCmd()   { return RunOnce([this]{ StartZoneBased(); }); }
@@ -84,7 +83,6 @@ frc2::CommandPtr SuperStructure::StartIntakingCmd()    { return RunOnce([this]{ 
 frc2::CommandPtr SuperStructure::StopIntakingCmd()     { return RunOnce([this]{ StopIntaking(); }); }
 frc2::CommandPtr SuperStructure::SwitchModes()         { return RunOnce([this]{ m_isDefenseMode = !m_isDefenseMode; }); }
 
-// ── Periodic ─────────────────────────────────────────────────────────────────
 void SuperStructure::Periodic() {
     bool readyToShoot = false;
 
@@ -138,6 +136,9 @@ void SuperStructure::Periodic() {
 
     using FC = constants::FeederConstants;
 
+    bool wasIdle = m_wasIdle;
+    m_wasIdle = false;
+
     if (m_isOuttaking) {
         shooter->SetExitVelTarget(0.0);
         shooter->GoToTargetHoodAngle(0.0);
@@ -162,7 +163,25 @@ void SuperStructure::Periodic() {
         shooter->GoToTargetHoodAngle(0.0);
         feeder->GoToTargetSpeed(-10.0);
     } else {
-        shooter->SetExitVelTarget(0.0);
+        using SC = constants::ShooterConstants;
+        m_wasIdle = true;
+        if (!wasIdle) m_idleSpinTarget = shooter->Rps();
+
+        bool inZone = frc::DriverStation::IsTeleopEnabled() && m_drivetrain->IsInAllianceZone();
+        double goal = inZone ? SC::idleSpinRps : 0.0;
+        double step = SC::idleSpinRampRpsPerSec * 0.02;
+
+        if (goal < m_idleSpinTarget) {
+            m_idleSpinTarget = goal;
+        } else {
+            m_idleSpinTarget += util::Clamp(goal - m_idleSpinTarget, 0.0, step);
+        }
+
+        if (m_idleSpinTarget > 0.1) {
+            shooter->GoToTargetSpeed(m_idleSpinTarget);
+        } else {
+            shooter->SetExitVelTarget(0.0);
+        }
         shooter->GoToTargetHoodAngle(0.0);
         feeder->GoToTargetSpeed(0.0);
     }

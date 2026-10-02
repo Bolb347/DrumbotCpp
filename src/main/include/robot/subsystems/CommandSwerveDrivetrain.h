@@ -320,6 +320,7 @@ public:
 
     enum class ShootingState { PASSINGLEFT, PASSINGRIGHT, SCORING };
     ShootingState GetShootingState() const;
+    bool IsInAllianceZone() const;
 
     frc::Pose3d GetPositionRelativeField() const;
 

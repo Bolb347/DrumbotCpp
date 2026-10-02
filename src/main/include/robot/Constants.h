@@ -144,6 +144,9 @@ struct ShooterConstants {
     static constexpr double flywheelStatorLimit = 70.0;
     static constexpr double flywheelRampPeriod  = 0.25;
 
+    static constexpr double idleSpinRps = 15.0;
+    static constexpr double idleSpinRampRpsPerSec = 4.0;
+
     static constexpr double kP1 = 2.0, kI1 = 0.0, kD1 = 0.0;
     static constexpr double kG1 = 0.0, kS1 = 0.0,  kA1 = 0.0, kV1 = 0.0;
     

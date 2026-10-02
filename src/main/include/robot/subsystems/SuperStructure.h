@@ -92,6 +92,8 @@ private:
     bool m_isSpunUp        = false;
     bool m_isIntaking      = false;
     bool m_isDefenseMode   = false;
+    bool m_wasIdle         = false;
+    double m_idleSpinTarget = 0.0;
 
     ctre::phoenix6::hardware::CANrange m_range{60, "team3045-2"};
     frc::Timer m_shooterAtSpeedTimer;

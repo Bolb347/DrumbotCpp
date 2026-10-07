@@ -144,11 +144,11 @@ struct ShooterConstants {
     static constexpr double flywheelStatorLimit = 65.0;
     static constexpr double flywheelRampPeriod  = 0.25;
 
-    static constexpr double idleSpinRps = 15.0;
-    static constexpr double idleSpinRampRpsPerSec = 4.0;
+    static constexpr double idleSpinRps = 24.0;
+    static constexpr double idleSpinRampRpsPerSec = 8.0;
 
-    static constexpr double kPIdle = 0.15, kIIdle = 0.0, kDIdle = 0.0;
-    static constexpr double kSIdle = 0.44, kAIdle = 0.14, kVIdle = 0.124;
+    static constexpr double kPIdle = 0.25, kIIdle = 0.0, kDIdle = 0.0;
+    static constexpr double kSIdle = 0.14, kAIdle = 0.04, kVIdle = 0.054;
 
     static constexpr double idleSupplyLimit = 12.0;
     static constexpr double idleStatorLimit = 20.0;

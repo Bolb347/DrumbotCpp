@@ -7,7 +7,7 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 1.0
+            "waitTime": 3.0
           }
         },
         {
@@ -17,7 +17,7 @@
               {
                 "type": "path",
                 "data": {
-                  "pathName": "delayed start 1-254"
+                  "pathName": "359 drumbottom1"
                 }
               },
               {
@@ -49,15 +49,9 @@
           }
         },
         {
-          "type": "wait",
-          "data": {
-            "waitTime": 2.0
-          }
-        },
-        {
           "type": "path",
           "data": {
-            "pathName": "delayed start 2-254"
+            "pathName": "drumbottom2-2"
           }
         },
         {
@@ -104,15 +98,52 @@
           }
         },
         {
-          "type": "wait",
+          "type": "path",
           "data": {
-            "waitTime": 0.75
+            "pathName": "359 drumbottompoofs3-2"
+          }
+        },
+        {
+          "type": "parallel",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "TrackAndAim"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "SlowPush"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "RunHopper"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopTracking"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "IntakeDown"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "delayed start 3-254"
+            "pathName": "drumbottom4-2"
           }
         }
       ]

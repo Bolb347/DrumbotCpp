@@ -53,11 +53,11 @@ struct FeederConstants {
 
 // ─────────────────── Hopper ───────────────────
 struct HopperConstants {
-    static constexpr double kP = 0.7,  kI = 0.1, kD = 0.0;
-    static constexpr double kG = 0.0,  kS = 0.4, kA = 0.0, kV = 0.115;
+    static constexpr double kP = 0.8,  kI = 0.02, kD = 0.0;
+    static constexpr double kG = 0.0,  kS = 0, kA = 0.0, kV = 0.0;
     
-    static constexpr double supplyLimit = 40.0;
-    static constexpr double statorLimit = 60.0;
+    static constexpr double supplyLimit = 30.0;
+    static constexpr double statorLimit = 40.0;
 
     static configs::TalonFXConfiguration BuildConfig() {
         return configs::TalonFXConfiguration{}
@@ -80,14 +80,14 @@ struct IntakeConstants {
     static constexpr double kP = 0.35, kI = 0.0, kD = 0.0;
     static constexpr double kG = 0.0,  kS = 0.18, kA = 0.0, kV = 0.115;
     
-    static constexpr double spinnerSupplyLimit = 35.0;
-    static constexpr double spinnerStatorLimit = 60.0;
+    static constexpr double spinnerSupplyLimit = 30.0;
+    static constexpr double spinnerStatorLimit = 50.0;
     
     static constexpr double kP1 = 2.5, kP2 = 5.0;
     static constexpr double kI1 = 0.0, kD1 = 0.0, kG1 = 0.0, kS1 = 0.0, kA1 = 0.0, kV1 = 0.0;
     
-    static constexpr double tilterSupplyLimit = 50.0;
-    static constexpr double tilterStatorLimit = 70.0;
+    static constexpr double tilterSupplyLimit = 30.0;
+    static constexpr double tilterStatorLimit = 50.0;
 
     static configs::TalonFXConfiguration BuildSpinnerConfigC() {
         return configs::TalonFXConfiguration{}
@@ -141,7 +141,7 @@ struct ShooterConstants {
     static constexpr double kG = 0.0,  kS = 0.44, kA = 0.14, kV = 0.124;
     
     static constexpr double flywheelSupplyLimit = 35.0;
-    static constexpr double flywheelStatorLimit = 70.0;
+    static constexpr double flywheelStatorLimit = 65.0;
     static constexpr double flywheelRampPeriod  = 0.25;
 
     static constexpr double kP1 = 2.0, kI1 = 0.0, kD1 = 0.0;

@@ -79,7 +79,7 @@ void Shooter::GoToTargetRot(double targetRot) {
 void Shooter::SetExitVelTarget(double targetExitVelocity) {
     if (targetExitVelocity == 0.0) { GoToTargetSpeed(0.0); return; }
 
-    constexpr double adjustment = 0.72;
+    constexpr double adjustment = 0.73;
     constexpr double flywheelRadius = 0.0508; // 2 inches in meters
     double targetRPS = targetExitVelocity / (adjustment * 2.0 * std::numbers::pi * flywheelRadius);
 

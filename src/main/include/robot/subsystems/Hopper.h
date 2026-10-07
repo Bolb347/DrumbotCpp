@@ -19,7 +19,7 @@ private:
     void DoStop();
 
     ctre::phoenix6::hardware::TalonFX m_motor{6, "team3045-2"};
-    double m_feedSpeed = 100.0;
+    double m_feedSpeed = 120.0;
 };
 
 } // namespace subsystems

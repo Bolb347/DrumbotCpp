@@ -55,6 +55,13 @@ class TunerConstants {
         .WithMotorOutput(
             configs::MotorOutputConfigs{}
                 .WithNeutralMode(signals::NeutralModeValue::Coast)
+        )
+        .WithCurrentLimits(
+            configs::CurrentLimitsConfigs{}
+                .WithStatorCurrentLimit(100_A)
+                .WithStatorCurrentLimitEnable(true)
+                .WithSupplyCurrentLimit(70_A)
+                .WithSupplyCurrentLimitEnable(true)
         );
 
     static constexpr configs::TalonFXConfiguration steerInitialConfigs = configs::TalonFXConfiguration{}
@@ -134,7 +141,7 @@ private:
     static constexpr int kFrontLeftDriveMotorId = 32;
     static constexpr int kFrontLeftSteerMotorId = 36;
     static constexpr int kFrontLeftEncoderId = 9;
-    static constexpr units::turn_t kFrontLeftEncoderOffset = 0.06103515625_tr;
+    static constexpr units::turn_t kFrontLeftEncoderOffset = 0.51103515625_tr;
     static constexpr bool kFrontLeftSteerMotorInverted = false;
     static constexpr bool kFrontLeftEncoderInverted = false;
 

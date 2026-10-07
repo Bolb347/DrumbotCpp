@@ -167,6 +167,10 @@ CommandSwerveDrivetrain::ShootingState CommandSwerveDrivetrain::GetShootingState
     return ShootingState::SCORING;
 }
 
+bool CommandSwerveDrivetrain::IsInAllianceZone() const {
+    return GetShootingState() == ShootingState::SCORING;
+}
+
 frc::Pose3d CommandSwerveDrivetrain::GetPositionRelativeField() const {
     frc::Pose2d   robotPose     = GetState().Pose;
     frc::Rotation2d robotRotation = robotPose.Rotation();

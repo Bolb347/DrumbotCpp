@@ -144,6 +144,15 @@ struct ShooterConstants {
     static constexpr double flywheelStatorLimit = 65.0;
     static constexpr double flywheelRampPeriod  = 0.25;
 
+    static constexpr double idleSpinRps = 15.0;
+    static constexpr double idleSpinRampRpsPerSec = 4.0;
+
+    static constexpr double kPIdle = 0.15, kIIdle = 0.0, kDIdle = 0.0;
+    static constexpr double kSIdle = 0.44, kAIdle = 0.14, kVIdle = 0.124;
+
+    static constexpr double idleSupplyLimit = 12.0;
+    static constexpr double idleStatorLimit = 20.0;
+
     static constexpr double kP1 = 2.0, kI1 = 0.0, kD1 = 0.0;
     static constexpr double kG1 = 0.0, kS1 = 0.0,  kA1 = 0.0, kV1 = 0.0;
     
@@ -165,7 +174,26 @@ struct ShooterConstants {
                 .WithVoltageOpenLoopRampPeriod(units::second_t{flywheelRampPeriod}))
             .WithSlot0(configs::Slot0Configs{}
                 .WithKP(kP).WithKI(kI).WithKD(kD)
-                .WithKG(kG).WithKS(kS).WithKA(kA).WithKV(kV));
+                .WithKG(kG).WithKS(kS).WithKA(kA).WithKV(kV))
+            .WithSlot1(configs::Slot1Configs{}
+                .WithKP(kPIdle).WithKI(kIIdle).WithKD(kDIdle)
+                .WithKG(kG).WithKS(kSIdle).WithKA(kAIdle).WithKV(kVIdle));
+    }
+
+    static configs::CurrentLimitsConfigs BuildFlywheelNormalLimits() {
+        return configs::CurrentLimitsConfigs{}
+            .WithSupplyCurrentLimit(units::ampere_t{flywheelSupplyLimit})
+            .WithSupplyCurrentLimitEnable(true)
+            .WithStatorCurrentLimit(units::ampere_t{flywheelStatorLimit})
+            .WithStatorCurrentLimitEnable(true);
+    }
+
+    static configs::CurrentLimitsConfigs BuildFlywheelIdleLimits() {
+        return configs::CurrentLimitsConfigs{}
+            .WithSupplyCurrentLimit(units::ampere_t{idleSupplyLimit})
+            .WithSupplyCurrentLimitEnable(true)
+            .WithStatorCurrentLimit(units::ampere_t{idleStatorLimit})
+            .WithStatorCurrentLimitEnable(true);
     }
 
     static configs::TalonFXConfiguration BuildFlywheelConfigCC() {

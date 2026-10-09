@@ -347,31 +347,35 @@ void RobotContainer::ConfigureBindings() {
         .AlongWith(hopper->Run())
         .AlongWith(intake->SlowPush()));
     controller.L2().OnTrue(
-        superStructure->StopTrackingCmd()
+    superStructure->StopTrackingCmd()
         .AndThen(superStructure->StopSpunUpCmd())
         .AndThen(superStructure->StopPassingCmd())
         .AndThen(superStructure->StartIntakingCmd())
         .AlongWith(intake->MoveDown())
         .AndThen(intake->Run())
-        .AndThen(hopper->Stop()));
-    controller.POVLeft().OnTrue(intake->MoveDown());
-    controller.POVRight().OnTrue(
-        intake->Stow()
-        .AndThen(intake->Stop())
-        .AndThen(hopper->Stop())
-        .AndThen(superStructure->StopIntakingCmd()));
-    controller.POVUp().OnTrue(intake->AutoZero());
+        .AlongWith(hopper->Run()));  // Changed from .AndThen(hopper->Stop())
+
+    // R1 - Toggle intake with hopper running
     controller.R1().OnTrue(
         intake->MoveDown()
-        .AndThen(intake->ToggleIntake())
-        .AlongWith(hopper->Stop())
-        .AndThen(superStructure->StartIntakingCmd())
-        .AndThen(frc2::cmd::Either(
-            frc2::cmd::None(),
-            superStructure->StopIntakingCmd()
-                .AndThen(intake->Stop())
-                .AndThen(hopper->Stop()),
-            []{ return intake->state != subsystems::Intake::IntakeState::STOPPED; })));
+            .AndThen(intake->ToggleIntake())
+            .AlongWith(hopper->Run())    // Changed from hopper->Stop()
+            .AndThen(superStructure->StartIntakingCmd())
+            .AndThen(frc2::cmd::Either(
+                frc2::cmd::None(),
+                superStructure->StopIntakingCmd()
+                    .AndThen(intake->Stop())
+                    .AndThen(hopper->Stop()),
+                []{ return intake->state != subsystems::Intake::IntakeState::STOPPED; })));
+
+    // POVRight - Stow/stop still correctly stops everything
+    controller.POVRight().OnTrue(
+        intake->Stow()
+            .AndThen(intake->Stop())
+            .AndThen(hopper->Stop())
+            .AndThen(superStructure->StopIntakingCmd()));
+    controller.POVLeft().OnTrue(intake->MoveDown());
+    controller.POVUp().OnTrue(intake->AutoZero());
     controller.Circle()
         .OnTrue(superStructure->StartOuttakingCmd()
             .AndThen(hopper->Outtake())

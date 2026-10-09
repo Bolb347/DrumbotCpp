@@ -84,37 +84,39 @@ frc2::CommandPtr SuperStructure::StopIntakingCmd()     { return RunOnce([this]{ 
 frc2::CommandPtr SuperStructure::SwitchModes()         { return RunOnce([this]{ m_isDefenseMode = !m_isDefenseMode; }); }
 
 void SuperStructure::Periodic() {
-    bool readyToShoot = false;
+    using FC = constants::FeederConstants;
+    using SC = constants::ShooterConstants;
 
-    frc::ChassisSpeeds speeds = frc::ChassisSpeeds::FromRobotRelativeSpeeds(
-        m_drivetrain->GetState().Speeds,
-        m_drivetrain->GetState().Pose.Rotation());
+    const auto driveState = m_drivetrain->GetState();
 
-    util::BallisticsSolver2::ShotMode mode =
-        (RobotContainer::target.ToTranslation2d()
-             .Distance(m_drivetrain->GetState().Pose.Translation())
-             .value() < 5.5)
-        ? util::BallisticsSolver2::ShotMode::HIGHARC
-        : util::BallisticsSolver2::ShotMode::LOWARC;
+    const frc::ChassisSpeeds speeds =
+        frc::ChassisSpeeds::FromRobotRelativeSpeeds(
+            driveState.Speeds,
+            driveState.Pose.Rotation());
 
-    bool shooterReady  = shooter->IsAtTarget();
-    bool trackingReady = m_isTracking && solution.valid;
-    bool safeReady     = m_isSafeShooting1 || m_isSafeShooting2;
+    const bool inAllianceZone =
+        frc::DriverStation::IsTeleopEnabled() &&
+        m_drivetrain->IsInAllianceZone();
 
-    if ((trackingReady || safeReady) && shooterReady) {
-        if (!m_shooterAtSpeedTimer.IsRunning()) m_shooterAtSpeedTimer.Restart();
-    } else {
-        m_shooterAtSpeedTimer.Stop();
-        m_shooterAtSpeedTimer.Reset();
-    }
-    readyToShoot = m_shooterAtSpeedTimer.HasElapsed(0.35_s);
+    const double distanceToTarget =
+        RobotContainer::target.ToTranslation2d()
+            .Distance(driveState.Pose.Translation())
+            .value();
 
+    const auto mode =
+        distanceToTarget < 5.5
+            ? util::BallisticsSolver2::ShotMode::HIGHARC
+            : util::BallisticsSolver2::ShotMode::LOWARC;
+
+    // Update the solver when tracking or safe shooting is requested.
     if (m_isTracking || m_isSafeShooting1 || m_isSafeShooting2) {
         solution = solver.Solve(
             m_drivetrain->GetPositionRelativeField().Translation(),
-            frc::Translation3d{units::meter_t{speeds.vx.value()},
-                               units::meter_t{speeds.vy.value()},
-                               0_m},
+            frc::Translation3d{
+                units::meter_t{speeds.vx.value()},
+                units::meter_t{speeds.vy.value()},
+                0_m
+            },
             frc::Translation3d{},
             RobotContainer::target,
             0.1,
@@ -124,77 +126,121 @@ void SuperStructure::Periodic() {
         solution = util::BallisticsSolver2::BallisticSolution{};
     }
 
-    frc::SmartDashboard::PutBoolean("Solver/Valid",         solution.valid);
-    frc::SmartDashboard::PutNumber ("Solver/Hood",          solution.hoodAngle);
-    frc::SmartDashboard::PutNumber ("Solver/ExitVel",       solution.exitVelocity);
-    frc::SmartDashboard::PutNumber ("Solver/TurretAngle",   solution.turretAngle);
-    frc::SmartDashboard::PutNumber ("Solver/TOF",           solution.timeOfFlight);
-    frc::SmartDashboard::PutNumberArray("Target",
-        std::vector<double>{RobotContainer::target.X().value(),
-                            RobotContainer::target.Y().value(),
-                            RobotContainer::target.Z().value(), 0.0});
+    frc::SmartDashboard::PutBoolean("Solver/Valid", solution.valid);
+    frc::SmartDashboard::PutBoolean("Idle/InAllianceZone", inAllianceZone);
 
-    using FC = constants::FeederConstants;
+    // Readiness timer for active shooting.
+    const bool activeTrackingShot = m_isTracking && solution.valid;
+    const bool activeSafeShot = m_isSafeShooting1 || m_isSafeShooting2;
 
-    bool wasIdle = m_wasIdle;
-    m_wasIdle = false;
+    if ((activeTrackingShot || activeSafeShot) && shooter->IsAtTarget()) {
+        if (!m_shooterAtSpeedTimer.IsRunning()) {
+            m_shooterAtSpeedTimer.Restart();
+        }
+    } else {
+        m_shooterAtSpeedTimer.Stop();
+        m_shooterAtSpeedTimer.Reset();
+    }
 
-    bool idleProfile = !(m_isOuttaking || m_isIntaking ||
-                         (m_isTracking && solution.valid) ||
-                         m_isSafeShooting1 || m_isSafeShooting2 || m_isSpunUp);
-    shooter->SetIdleProfile(idleProfile);
+    const bool readyToShoot = m_shooterAtSpeedTimer.HasElapsed(0.35_s);
 
+    // Intaking is NOT an active action for the shooter.
+    // This allows idle spin to continue running while intaking.
+    const bool activeAction =
+        m_isOuttaking ||
+        m_isTracking ||
+        m_isSafeShooting1 ||
+        m_isSafeShooting2 ||
+        m_isSpunUp;
+
+    shooter->SetIdleProfile(!activeAction);
+
+    // --- FEEDER CONTROL (Feeder stops during intake to prevent premature shooting) ---
+    if (m_isIntaking) {
+        feeder->GoToTargetSpeed(0.0);
+    } else if (m_isOuttaking) {
+        feeder->GoToTargetSpeed(-FC::feederTargetSpeed);
+    } else if (m_isTracking && solution.valid &&
+               std::isfinite(solution.hoodAngle) &&
+               std::isfinite(solution.exitVelocity)) {
+        feeder->GoToTargetSpeed(readyToShoot ? FC::feederTargetSpeed : -2.0);
+    } else if ((m_isSafeShooting1 || m_isSafeShooting2) && readyToShoot) {
+        feeder->GoToTargetSpeed(FC::feederTargetSpeed);
+    } else if (m_isSpunUp) {
+        feeder->GoToTargetSpeed(-10.0);
+    } else {
+        feeder->GoToTargetSpeed(0.0);
+    }
+
+    // --- SHOOTER CONTROL (Unaffected by intaking) ---
     if (m_isOuttaking) {
         shooter->SetExitVelTarget(0.0);
         shooter->GoToTargetHoodAngle(0.0);
-        feeder->GoToTargetSpeed(-FC::feederTargetSpeed);
-    } else if (m_isIntaking) {
-        shooter->GoToTargetHoodAngle(0.0);
-    } else if (m_isTracking && solution.valid) {
-        if (!std::isfinite(solution.hoodAngle)) return;
-        shooter->SetExitVelTarget(solution.exitVelocity);
-        shooter->GoToTargetHoodAngle(solution.hoodAngle);
-        feeder->GoToTargetSpeed(readyToShoot ? FC::feederTargetSpeed : -2.0);
-    } else if (m_isSafeShooting1) {
+        shooter->GoToTargetSpeed(0.0);
+        m_wasIdle = false;
+    }
+    else if (m_isTracking) {
+        if (!solution.valid || !std::isfinite(solution.hoodAngle) || !std::isfinite(solution.exitVelocity)) {
+            shooter->GoToTargetSpeed(0.0);
+            shooter->SetExitVelTarget(0.0);
+            shooter->GoToTargetHoodAngle(0.0);
+            m_wasIdle = false;
+        } else {
+            shooter->SetExitVelTarget(solution.exitVelocity);
+            shooter->GoToTargetHoodAngle(solution.hoodAngle);
+            m_wasIdle = false;
+        }
+    }
+    else if (m_isSafeShooting1) {
         shooter->GoToTargetHoodAngle(0.0);
         shooter->SetExitVelTarget(7.0);
-        feeder->GoToTargetSpeed(readyToShoot ? FC::feederTargetSpeed : 0.0);
-    } else if (m_isSafeShooting2) {
+        m_wasIdle = false;
+    }
+    else if (m_isSafeShooting2) {
         shooter->GoToTargetHoodAngle(20.0);
         shooter->SetExitVelTarget(8.0);
-        feeder->GoToTargetSpeed(readyToShoot ? FC::feederTargetSpeed : 0.0);
-    } else if (m_isSpunUp) {
+        m_wasIdle = false;
+    }
+    else if (m_isSpunUp) {
         shooter->GoToTargetSpeed(30.0);
         shooter->GoToTargetHoodAngle(0.0);
-        feeder->GoToTargetSpeed(-10.0);
-    } else {
-        using SC = constants::ShooterConstants;
+        m_wasIdle = false;
+    }
+    // --- IDLE STATE (Runs even during intake) ---
+    else {
         m_wasIdle = true;
-        if (!wasIdle) m_idleSpinTarget = shooter->Rps();
 
-        bool inZone = frc::DriverStation::IsTeleopEnabled() && m_drivetrain->IsInAllianceZone();
-        double goal = inZone ? SC::idleSpinRps : 0.0;
-        double step = SC::idleSpinRampRpsPerSec * 0.02;
+        if (inAllianceZone) {
+            const double idleGoal = SC::idleSpinRps;
+            const double rampStep = SC::idleSpinRampRpsPerSec * 0.02;
 
-        if (goal < m_idleSpinTarget) {
-            m_idleSpinTarget = goal;
-        } else {
-            m_idleSpinTarget += util::Clamp(goal - m_idleSpinTarget, 0.0, step);
-        }
+            m_idleSpinTarget += util::Clamp(
+                idleGoal - m_idleSpinTarget,
+                -rampStep,
+                rampStep
+            );
+            m_idleSpinTarget = util::Clamp(m_idleSpinTarget, 0.0, idleGoal);
 
-        if (m_idleSpinTarget > 0.1) {
             shooter->GoToTargetSpeed(m_idleSpinTarget);
+            shooter->GoToTargetHoodAngle(0.0);
+
+            frc::SmartDashboard::PutNumber("Idle/GoalRPS", idleGoal);
+            frc::SmartDashboard::PutNumber("Idle/TargetRPS", m_idleSpinTarget);
         } else {
+            m_idleSpinTarget = 0.0;
+            shooter->GoToTargetSpeed(0.0);
             shooter->SetExitVelTarget(0.0);
+            shooter->GoToTargetHoodAngle(0.0);
+
+            frc::SmartDashboard::PutNumber("Idle/GoalRPS", 0.0);
+            frc::SmartDashboard::PutNumber("Idle/TargetRPS", 0.0);
         }
-        shooter->GoToTargetHoodAngle(0.0);
-        feeder->GoToTargetSpeed(0.0);
     }
 }
 
 frc2::CommandPtr SuperStructure::TrackAndAimCommand() {
     return m_drivetrain->Run([this] {
-        if (solution.valid) {
+        if (solution.valid && m_drivetrain->IsInAllianceZone()) {
             double targetDeg = solution.turretAngle + 
                                (RobotContainer::isBlueAlliance.GetValue() ? 0.0 : 180.0);
             double currentDeg = m_drivetrain->GetState().Pose.Rotation().Degrees().value() + 
@@ -205,7 +251,6 @@ frc2::CommandPtr SuperStructure::TrackAndAimCommand() {
             frc::SmartDashboard::PutNumber("Angle error", angleErr);
 
             double maxSpd = RobotContainer::MaxSpeed;
-
             double mag = std::hypot(m_controller->GetLeftY(), m_controller->GetLeftX());
 
             if (mag < 0.2 && m_isDefenseMode && angleErr < 2.0) {

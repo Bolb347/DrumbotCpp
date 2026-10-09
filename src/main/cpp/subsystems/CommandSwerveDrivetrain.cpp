@@ -168,7 +168,19 @@ CommandSwerveDrivetrain::ShootingState CommandSwerveDrivetrain::GetShootingState
 }
 
 bool CommandSwerveDrivetrain::IsInAllianceZone() const {
-    return GetShootingState() == ShootingState::SCORING;
+    const double poseX = GetState().Pose.X().value();
+
+    const auto alliance = frc::DriverStation::GetAlliance();
+    const bool isBlue =
+        !alliance.has_value() ||
+        alliance.value() == frc::DriverStation::Alliance::kBlue;
+
+    constexpr double kBlueAllianceZoneBoundaryX = 4.7;
+    constexpr double kRedAllianceZoneBoundaryX = 12.0;
+
+    return isBlue
+        ? poseX <= kBlueAllianceZoneBoundaryX
+        : poseX >= kRedAllianceZoneBoundaryX;
 }
 
 frc::Pose3d CommandSwerveDrivetrain::GetPositionRelativeField() const {

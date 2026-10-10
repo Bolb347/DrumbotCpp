@@ -129,23 +129,34 @@ void SuperStructure::Periodic() {
     frc::SmartDashboard::PutBoolean("Solver/Valid", solution.valid);
     frc::SmartDashboard::PutBoolean("Idle/InAllianceZone", inAllianceZone);
 
-    // Readiness timer for active shooting.
+    // Determine if we should be shooting
     const bool activeTrackingShot = m_isTracking && solution.valid;
     const bool activeSafeShot = m_isSafeShooting1 || m_isSafeShooting2;
-
-    if ((activeTrackingShot || activeSafeShot) && shooter->IsAtTarget()) {
-        if (!m_shooterAtSpeedTimer.IsRunning()) {
-            m_shooterAtSpeedTimer.Restart();
-        }
-    } else {
+    const bool shouldShoot = activeTrackingShot || activeSafeShot;
+    
+    // Check if shooter is at target speed
+    const bool shooterAtTarget = shooter->IsAtTarget();
+    
+    // Track state to detect when shooter FIRST reaches target while shooting
+    static bool timerStarted = false;
+    
+    // Start timer only once when shooter first reaches target during shooting
+    if (shouldShoot && shooterAtTarget && !timerStarted) {
+        m_shooterAtSpeedTimer.Reset();
+        m_shooterAtSpeedTimer.Start();
+        timerStarted = true;
+    }
+    
+    // Reset everything when we stop shooting or shooter drops below target
+    if (!shouldShoot || !shooterAtTarget) {
         m_shooterAtSpeedTimer.Stop();
         m_shooterAtSpeedTimer.Reset();
+        timerStarted = false;
     }
-
-    const bool readyToShoot = m_shooterAtSpeedTimer.HasElapsed(0.35_s);
-
+    
+    // Feeder runs only after timer has elapsed
+    const bool readyToShoot = timerStarted && m_shooterAtSpeedTimer.HasElapsed(0.05_s);
     // Intaking is NOT an active action for the shooter.
-    // This allows idle spin to continue running while intaking.
     const bool activeAction =
         m_isOuttaking ||
         m_isTracking ||
@@ -155,7 +166,7 @@ void SuperStructure::Periodic() {
 
     shooter->SetIdleProfile(!activeAction);
 
-    // --- FEEDER CONTROL (Feeder stops during intake to prevent premature shooting) ---
+    // --- FEEDER CONTROL ---
     if (m_isIntaking) {
         feeder->GoToTargetSpeed(0.0);
     } else if (m_isOuttaking) {
@@ -163,16 +174,24 @@ void SuperStructure::Periodic() {
     } else if (m_isTracking && solution.valid &&
                std::isfinite(solution.hoodAngle) &&
                std::isfinite(solution.exitVelocity)) {
-        feeder->GoToTargetSpeed(readyToShoot ? FC::feederTargetSpeed : -2.0);
-    } else if ((m_isSafeShooting1 || m_isSafeShooting2) && readyToShoot) {
-        feeder->GoToTargetSpeed(FC::feederTargetSpeed);
+        if (readyToShoot) {
+            feeder->GoToTargetSpeed(FC::feederTargetSpeed);
+        } else {
+            feeder->GoToTargetSpeed(-2.0);
+        }
+    } else if (m_isSafeShooting1 || m_isSafeShooting2) {
+        if (readyToShoot) {
+            feeder->GoToTargetSpeed(FC::feederTargetSpeed);
+        } else {
+            feeder->GoToTargetSpeed(0.0);
+        }
     } else if (m_isSpunUp) {
         feeder->GoToTargetSpeed(-10.0);
     } else {
         feeder->GoToTargetSpeed(0.0);
     }
 
-    // --- SHOOTER CONTROL (Unaffected by intaking) ---
+    // --- SHOOTER CONTROL ---
     if (m_isOuttaking) {
         shooter->SetExitVelTarget(0.0);
         shooter->GoToTargetHoodAngle(0.0);
@@ -206,7 +225,7 @@ void SuperStructure::Periodic() {
         shooter->GoToTargetHoodAngle(0.0);
         m_wasIdle = false;
     }
-    // --- IDLE STATE (Runs even during intake) ---
+    // --- IDLE STATE ---
     else {
         m_wasIdle = true;
 

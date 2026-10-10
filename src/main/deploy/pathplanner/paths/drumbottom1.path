@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 3.534450784593438,
-        "y": 0.34101283880171307
+        "x": 4.478972895863052,
+        "y": 0.30219686162624837
       },
       "prevControl": null,
       "nextControl": {
-        "x": 5.319985734664764,
-        "y": 0.34101283880171307
+        "x": 6.264507845934378,
+        "y": 0.30219686162624837
       },
       "isLocked": false,
       "linkedName": "drumbottom start"
@@ -41,7 +41,7 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 4.5,
+    "velocity": 3.5,
     "rotation": -76.2047313173526
   },
   "reversed": false,

@@ -91,7 +91,7 @@ void Shooter::GoToTargetRot(double targetRot) {
 void Shooter::SetExitVelTarget(double targetExitVelocity) {
     if (targetExitVelocity == 0.0) { GoToTargetSpeed(0.0); return; }
 
-    constexpr double adjustment = 0.73;
+    constexpr double adjustment = 0.715;
     constexpr double flywheelRadius = 0.0508; // 2 inches in meters
     double targetRPS = targetExitVelocity / (adjustment * 2.0 * std::numbers::pi * flywheelRadius);
 
@@ -101,8 +101,8 @@ void Shooter::SetExitVelTarget(double targetExitVelocity) {
 }
 
 bool Shooter::IsAtTarget() {
-    double tolerance = std::max(1.0, m_currTarget * 0.8);
-    bool hasTarget = m_currTarget > 0.1;
+    double tolerance = std::max(2.0, std::abs(m_currTarget) * 0.15);
+    bool hasTarget = std::abs(m_currTarget) > 0.1;
     bool atSpeed   = hasTarget && std::abs(Rps() - m_currTarget) < tolerance;
     return m_stableDebouncer.Calculate(atSpeed);
 }
